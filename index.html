@@ -428,7 +428,9 @@
         upgrades.forEach((item, index) => {
             let currentLevel = purchasedUpgrades[index];
             let currentCost = Math.floor(item.cost * (1 + currentLevel * 0.15));
-            let isAffordable = gameData.money >= currentCost;
+            
+            // ТЕПЕРЬ МЫ ПРОВЕРЯЕМ СИЛУ
+            let isAffordable = gameData.power >= currentCost; 
 
             const card = document.createElement('div');
             card.className = 'card';
@@ -438,7 +440,7 @@
                     <span class="card-desc">${item.desc} (Ур. ${currentLevel})</span>
                 </div>
                 <button class="card-btn" ${isAffordable ? '' : 'disabled'} onclick="buyUpgrade(${index})">
-                    💪 ${currentCost}
+                    💪 ${currentCost} силы
                 </button>
             `;
             container.appendChild(card);
