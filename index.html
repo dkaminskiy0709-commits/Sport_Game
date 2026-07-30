@@ -6,7 +6,7 @@
     <title>Фиолетовый Качок</title>
     <style>
         /* Стили - фиолетовая неоновая тема */
-        @import url('file:///C:/Users/user/Downloads/photo_5429497751105378371_y.jpg');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body {
@@ -204,18 +204,25 @@
         ::-webkit-scrollbar { width: 0px; }
     </style>
 </head>
-        #click-target {
-            width: 280px;
-            height: 280px;
-            background-image: url('https://i.pinimg.com/736x/a0/c4/57/a0c457cd5df5d7fc61b8673890f3c953.jpg'); /* ЗАМЕНИ ЭТУ ССЫЛКУ */
-            background-size: cover;
-            background-position: center;
-            border-radius: 50%;
-            box-shadow: 0 0 60px rgba(139, 92, 246, 0.6), inset 0 0 20px rgba(0,0,0,0.8);
-            transition: transform 0.05s;
-            cursor: pointer;
-            position: relative;
-        }
+<body>
+
+<div id="game-container">
+    
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+    <div id="header">
+        <div class="stat-box">
+            <span class="stat-label">💪 СИЛА</span>
+            <span class="stat-value" id="power-display">0</span>
+        </div>
+        <div class="stat-box" style="align-items: center;">
+            <span class="stat-label">💵 БАБЛО</span>
+            <span class="stat-value money-icon" id="money-display">0</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+            <span id="time-display">00:00:00</span>
+            <span class="no-premium">НЕТУ ПРЕМИУМА</span>
+        </div>
+    </div>
 
     <!-- ЭКРАН 1: ИГРА -->
     <div id="game-screen" class="screen active">
