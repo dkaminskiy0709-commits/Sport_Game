@@ -428,21 +428,34 @@
         upgrades.forEach((item, index) => {
             let currentLevel = purchasedUpgrades[index];
             let currentCost = Math.floor(item.cost * (1 + currentLevel * 0.15));
-            
-            // ТЕПЕРЬ МЫ ПРОВЕРЯЕМ СИЛУ, А НЕ ДЕНЬГИ
-            let isAffordable = gameData.power >= currentCost; 
+            let isAffordable = gameData.power >= currentCost;
 
+            // Создаем карточку
             const card = document.createElement('div');
             card.className = 'card';
-            card.innerHTML = `
-                <div class="card-info">
-                    <span class="card-name">${item.name}</span>
-                    <span class="card-desc">${item.desc} (Ур. ${currentLevel})</span>
-                </div>
-                <button class="card-btn" ${isAffordable ? '' : 'disabled'} onclick="buyUpgrade(${index})">
-                    💪 ${currentCost} силы
-                </button>
+
+            // Создаем блок с описанием
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'card-info';
+            infoDiv.innerHTML = `
+                <span class="card-name">${item.name}</span>
+                <span class="card-desc">${item.desc} (Ур. ${currentLevel})</span>
             `;
+            card.appendChild(infoDiv);
+
+            // Создаем кнопку (БЕЗОПАСНЫЙ СПОСОБ)
+            const btn = document.createElement('button');
+            btn.className = 'card-btn';
+            btn.innerText = `💪 ${currentCost} силы`;
+            if (!isAffordable) {
+                btn.disabled = true;
+            }
+            // Назначаем событие клика напрямую через JS
+            btn.onclick = function() {
+                buyUpgrade(index);
+            };
+            
+            card.appendChild(btn);
             container.appendChild(card);
         });
     }
@@ -452,9 +465,8 @@
         let currentLevel = purchasedUpgrades[index];
         let cost = Math.floor(item.cost * (1 + currentLevel * 0.15));
 
-        // ТЕПЕРЬ МЫ ПРОВЕРЯЕМ СИЛУ, А НЕ ДЕНЬГИ
         if (gameData.power >= cost) {
-            gameData.power -= cost; // Тратим СИЛУ
+            gameData.power -= cost;
             
             if (item.type === 'click') {
                 gameData.clickPower += item.boost;
