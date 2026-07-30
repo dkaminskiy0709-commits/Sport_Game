@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Тренировка</title>
+    <!-- Подключаем Telegram SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Стили для всего приложения */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--tg-theme-secondary-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 360px;
+            width: 100%;
+        }
+        /* Стили для персонажа */
+        .character {
+            font-size: 120px;
+            line-height: 1.4;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            display: inline-block;
+            background: var(--tg-theme-bg-color, #f0f0f0);
+            padding: 20px 40px;
+            border-radius: 100px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            width: fit-content;
+        }
+        .character:active {
+            transform: scale(0.92);
+        }
+        /* Стили для счётчиков */
+        .stats {
+            background: var(--tg-theme-bg-color, #f5f5f5);
+            padding: 20px;
+            border-radius: 20px;
+            margin: 15px 0;
+            width: 100%;
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #ccc);
+        }
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        .stat-label {
+            font-weight: 500;
+            color: var(--tg-theme-hint-color, #666);
+        }
+        .stat-value {
+            font-weight: 700;
+            font-size: 1.2em;
+        }
+        button {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        button:active {
+            opacity: 0.8;
+        }
+        .level-up {
+            color: var(--tg-theme-accent-text-color, #ff9500);
+            font-weight: 700;
+            margin-top: 10px;
+            min-height: 2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏋️ Тренировка</h1>
+        <!-- Кликабельный персонаж -->
+        <div class="character" id="character">🧑</div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-label">💪 Сила</span>
+                <span class="stat-value" id="strength">1</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">🌟 Уровень</span>
+                <span class="stat-value" id="level">1</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">📊 Опыт (XP)</span>
+                <span class="stat-value" id="xp">0 / 100</span>
+            </div>
+        </div>
+        
+        <div class="level-up" id="levelUpMessage">Нажми на человечка, чтобы начать!</div>
+        <button id="resetButton">🔄 Начать заново</button>
+    </div>
+
+    <script>
+        // --- Игровая логика ---
+
+        // Создаем объект с состоянием игры
+        let game = {
+            strength: 1,
+            level: 1,
+            xp: 0,
+            xpToNextLevel: 100
+        };
+
+        // Элементы на странице для обновления
+        const characterEl = document.getElementById('character');
+        const strengthEl = document.getElementById('strength');
+        const levelEl = document.getElementById('level');
+        const xpEl = document.getElementById('xp');
+        const messageEl = document.getElementById('levelUpMessage');
+
+        // Функция сохранения прогресса (в памяти телефона)
+        function saveGame() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.CloudStorage.setItem('gameData', JSON.stringify(game));
+            }
+        }
+
+        // Функция загрузки сохранений
+        function loadGame() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.CloudStorage.getItem('gameData', (err, data) => {
+                    if (!err && data) {
+                        try {
+                            const saved = JSON.parse(data);
+                            game = saved;
+                            updateUI();
+                        } catch(e) {}
+                    }
+                });
+            }
+        }
+
+        // Функция обновления интерфейса
+        function updateUI() {
+            strengthEl.textContent = game.strength;
+            levelEl.textContent = game.level;
+            xpEl.textContent = `${game.xp} / ${game.xpToNextLevel}`;
+            
+            // Меняем эмодзи персонажа в зависимости от силы
+            if (game.strength >= 20) {
+                characterEl.textContent = '🦾';
+            } else if (game.strength >= 10) {
+                characterEl.textContent = '💪';
+            } else {
+                characterEl.textContent = '🧑';
+            }
+        }
+
+        // Функция проверки повышения уровня
+        function checkLevelUp() {
+            if (game.xp >= game.xpToNextLevel) {
+                game.level++;
+                game.strength += 2; // +2 силы за уровень
+                game.xp = 0;
+                game.xpToNextLevel = Math.floor(game.xpToNextLevel * 1.5); // Каждый раз нужно больше опыта
+                messageEl.textContent = `🎉 УРОВЕНЬ ${game.level} ДОСТИГНУТ! +2 силы!`;
+                messageEl.style.color = 'var(--tg-theme-accent-text-color, #ff9500)';
+                
+                // Вибрация на телефоне
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
+                }
+                
+                updateUI();
+                saveGame();
+                
+                // Через 3 секунды убираем сообщение
+                setTimeout(() => {
+                    messageEl.textContent = 'Продолжай тренироваться! 💪';
+                }, 3000);
+            }
+        }
+
+        // --- Главное событие: клик по персонажу ---
+        characterEl.addEventListener('click', function(e) {
+            // Добавляем опыт и силу
+            const gain = 1 + Math.floor(game.strength / 5); // Чем сильнее, тем больше опыта
+            game.xp += gain;
+            game.strength += 1;
+            
+            // Анимация нажатия
+            this.style.transform = 'scale(0.85)';
+            setTimeout(() => { this.style.transform = 'scale(1)'; }, 150);
+            
+            // Вибрация при клике
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            }
+            
+            // Проверяем, не повысился ли уровень
+            checkLevelUp();
+            
+            // Обновляем интерфейс и сохраняем
+            updateUI();
+            saveGame();
+            
+            // Меняем сообщение
+            messageEl.textContent = `+${gain} XP, +1 сила!`;
+            messageEl.style.color = 'var(--tg-theme-text-color, #000)';
+        });
+
+        // --- Кнопка сброса ---
+        document.getElementById('resetButton').addEventListener('click', function() {
+            if (confirm('Точно начать заново? Весь прогресс будет потерян.')) {
+                game = {
+                    strength: 1,
+                    level: 1,
+                    xp: 0,
+                    xpToNextLevel: 100
+                };
+                messageEl.textContent = 'Прогресс сброшен. Начинай сначала!';
+                updateUI();
+                saveGame();
+                
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+                }
+            }
+        });
+
+        // --- Инициализация приложения ---
+        // Сообщаем Telegram, что приложение готово
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            // Расширяем на весь экран
+            window.Telegram.WebApp.expand();
+        }
+        
+        // Загружаем сохраненную игру
+        loadGame();
+    </script>
+</body>
+</html>
