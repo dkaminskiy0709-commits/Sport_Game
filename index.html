@@ -271,7 +271,7 @@
         power: 0,
         money: 0,
         clickPower: 1,
-        passiveIncome: 0 // AFK доход
+        passiveIncome: 0
     };
 
     // Данные улучшений (Индекс массива = уровень)
@@ -285,7 +285,7 @@
         { name: "Кроссовер", desc: "+100 силы за клик", cost: 75000, type: 'click', boost: 100 },
         { name: "Гантеля 'Гига'", desc: "+250 силы за клик", cost: 250000, type: 'click', boost: 250 },
         { name: "Стойка для приседа", desc: "+1000 силы за клик", cost: 1000000, type: 'click', boost: 1000 },
-        { name: "АФК Качок (Авто)", desc: "+5 силы каждую секунду (без кликов)", cost: 2000000, type: 'passive', boost: 5 } // 10-е улучшение
+        { name: "АФК Качок (Авто)", desc: "+5 силы каждую секунду (без кликов)", cost: 2000000, type: 'passive', boost: 5 }
     ];
 
     // Данные доната
@@ -294,13 +294,37 @@
         { name: "Кибер-АФК", desc: "Навсегда +100 силы в секунду (Автокликер)", price: 40, currency: "BYN", boost: 100, type: 'passive' }
     ];
 
-    let currentScreen = 'game';
-    let purchasedUpgrades = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // Счетчик купленных уровней для каждого улучшения
+    let purchasedUpgrades = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let isDonatBought = { titan: false, cyberAFK: false };
+    let currentScreen = 'game';
+
+    // --- СОХРАНЕНИЕ И ЗАГРУЗКА (НОВАЯ ФУНКЦИЯ) ---
+    function saveGame() {
+        const saveData = {
+            power: gameData.power,
+            money: gameData.money,
+            clickPower: gameData.clickPower,
+            passiveIncome: gameData.passiveIncome,
+            purchasedUpgrades: purchasedUpgrades,
+            isDonatBought: isDonatBought
+        };
+        localStorage.setItem('gymBroSave', JSON.stringify(saveData));
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem('gymBroSave');
+        if (saved) {
+            const data = JSON.parse(saved);
+            gameData.power = data.power || 0;
+            gameData.money = data.money || 0;
+            gameData.clickPower = data.clickPower || 1;
+            gameData.passiveIncome = data.passiveIncome || 0;
+            purchasedUpgrades = data.purchasedUpgrades || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            isDonatBought = data.isDonatBought || { titan: false, cyberAFK: false };
+        }
+    }
 
     // --- ФУНКЦИИ ЯДРА ---
-
-    // Обновление UI (счетчики и список)
     function updateUI() {
         document.getElementById('power-display').innerText = Math.floor(gameData.power);
         document.getElementById('money-display').innerText = Math.floor(gameData.money);
@@ -308,36 +332,30 @@
         renderDonates();
     }
 
-    // Получение времени МСК
     function updateTime() {
         const now = new Date();
-        const mskOffset = 3; // UTC+3
+        const mskOffset = 3;
         const mskTime = new Date(now.getTime() + (mskOffset * 60 * 60 * 1000));
         document.getElementById('time-display').innerText = mskTime.toTimeString().split(' ')[0];
     }
     setInterval(updateTime, 1000);
-    updateTime();
 
-    // АФК кликер
+    // --- АВТОСОХРАНЕНИЕ И АФК ---
     setInterval(() => {
         if(gameData.passiveIncome > 0) {
             gameData.power += gameData.passiveIncome;
             updateUI();
         }
+        saveGame(); // Сохраняем прогресс каждую секунду!
     }, 1000);
 
-    // --- ЛОГИКА КЛИКА И ПОКУПОК ---
-
-    // Клик по качку
+    // --- ЛОГИКА КЛИКА ---
     document.getElementById('click-target').addEventListener('click', function(e) {
-        // Начисляем силу
         gameData.power += gameData.clickPower;
-        // Начисляем деньги (базово 0.5 за клик, чтобы копилость на апгрейды)
         gameData.money += 0.5; 
-        
         updateUI();
+        saveGame(); // Сохраняем при клике
 
-        // Анимация всплытия "+n"
         const floatText = document.createElement('div');
         floatText.className = 'float-text';
         floatText.innerText = `+${gameData.clickPower}`;
@@ -346,13 +364,12 @@
         document.getElementById('character-container').appendChild(floatText);
         setTimeout(() => floatText.remove(), 1000);
 
-        // Анимация "качка" (легкая встряска)
         const char = document.getElementById('click-target');
         char.style.animation = 'shake 0.1s';
         setTimeout(() => char.style.animation = '', 100);
     });
 
-    // Добавляем CSS для тряски
+    // Стили для тряски
     const styleSheet = document.createElement("style");
     styleSheet.textContent = `
         @keyframes shake {
@@ -365,14 +382,14 @@
     `;
     document.head.appendChild(styleSheet);
 
-    // Отрисовка списка Улучшений
+    // --- ЛОГИКА УЛУЧШЕНИЙ ---
     function renderUpgrades() {
         const container = document.getElementById('upgrade-list-container');
         container.innerHTML = '';
         
         upgrades.forEach((item, index) => {
             let currentLevel = purchasedUpgrades[index];
-            let currentCost = Math.floor(item.cost * (1 + currentLevel * 0.15)); // Цена растет на 15% за уровень
+            let currentCost = Math.floor(item.cost * (1 + currentLevel * 0.15));
             let isAffordable = gameData.money >= currentCost;
 
             const card = document.createElement('div');
@@ -390,7 +407,6 @@
         });
     }
 
-    // Покупка улучшения
     function buyUpgrade(index) {
         let item = upgrades[index];
         let currentLevel = purchasedUpgrades[index];
@@ -407,10 +423,11 @@
             
             purchasedUpgrades[index]++;
             updateUI();
+            saveGame(); // Сохраняем покупку
         }
     }
 
-    // Отрисовка Доната
+    // --- ЛОГИКА ДОНАТА ---
     function renderDonates() {
         const container = document.getElementById('donate-list-container');
         container.innerHTML = '';
@@ -438,43 +455,37 @@
         });
     }
 
-    // Покупка доната (Имитация)
     function buyDonate(index) {
-        // В реальном боте здесь вызывается метод оплаты Telegram Stars или загрузка ссылки на оплату.
-        // Здесь мы просто симулируем успешную покупку.
-        
-        if(index === 0) { // Титан
+        if(index === 0) {
             if(!isDonatBought.titan) {
                 gameData.clickPower += 100;
                 isDonatBought.titan = true;
                 updateUI();
+                saveGame();
                 alert("Покупка 'Титан' успешна! +100 силы за клик!");
             }
-        } else if (index === 1) { // Кибер АФК
+        } else if (index === 1) {
             if(!isDonatBought.cyberAFK) {
                 gameData.passiveIncome += 100;
                 isDonatBought.cyberAFK = true;
                 updateUI();
+                saveGame();
                 alert("Покупка 'Кибер-АФК' успешна! +100 силы в секунду!");
             }
         }
     }
 
-    // --- НАВИГАЦИЯ ПО МЕНЮ ---
+    // --- МЕНЮ ---
     function switchScreen(screen) {
-        // Скрываем все экраны
         document.getElementById('game-screen').classList.remove('active');
         document.getElementById('upgrade-screen').classList.remove('active');
         document.getElementById('donate-screen').classList.remove('active');
-        
-        // Убираем активные кнопки
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
         if(screen === 'game') {
             document.getElementById('game-screen').classList.add('active');
         } else if(screen === 'upgrade') {
             document.getElementById('upgrade-screen').classList.add('active');
-            // Делаем кнопку активной (визуально)
             document.querySelectorAll('.nav-btn')[0].classList.add('active');
         } else if(screen === 'donate') {
             document.getElementById('donate-screen').classList.add('active');
@@ -483,9 +494,7 @@
         updateUI();
     }
 
-    // Инициализация
-    updateUI();
-
+    // --- ЗАПУСК ИГРЫ ---
+    loadGame();  // Сначала загружаем сохранения
+    updateUI();  // Потом обновляем экран
 </script>
-</body>
-</html>
