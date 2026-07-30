@@ -429,7 +429,7 @@
             let currentLevel = purchasedUpgrades[index];
             let currentCost = Math.floor(item.cost * (1 + currentLevel * 0.15));
             
-            // ТЕПЕРЬ МЫ ПРОВЕРЯЕМ СИЛУ
+            // ТЕПЕРЬ МЫ ПРОВЕРЯЕМ СИЛУ, А НЕ ДЕНЬГИ
             let isAffordable = gameData.power >= currentCost; 
 
             const card = document.createElement('div');
@@ -452,14 +452,15 @@
         let currentLevel = purchasedUpgrades[index];
         let cost = Math.floor(item.cost * (1 + currentLevel * 0.15));
 
-        if (gameData.money >= cost) {
-            gameData.money -= cost;
+        // ТЕПЕРЬ МЫ ПРОВЕРЯЕМ СИЛУ, А НЕ ДЕНЬГИ
+        if (gameData.power >= cost) {
+            gameData.power -= cost; // Тратим СИЛУ
             
             if (item.type === 'click') {
                 gameData.clickPower += item.boost;
             } else if (item.type === 'passive') {
                 gameData.passiveIncome += item.boost;
-            } else if (item.type === 'money') { // Добавили обработку денег
+            } else if (item.type === 'money') {
                 gameData.moneyPerSec += item.boost;
             }
             
@@ -468,7 +469,7 @@
             saveGame();
         }
     }
-
+    
     // --- ЛОГИКА ДОНАТА ---
     function renderDonates() {
         const container = document.getElementById('donate-list-container');
