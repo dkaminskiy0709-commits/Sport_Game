@@ -483,31 +483,28 @@
     }
     
     // --- ЛОГИКА ДОНАТА ---
-    function renderDonates() {
-        const container = document.getElementById('donate-list-container');
-        container.innerHTML = '';
+    function buyDonate(index) {
+        // ЗАМЕНИТЕ ЭТИ ССЫЛКИ НА ВАШИ ССЫЛКИ НА ОПЛАТУ
+        const paymentLinks = [
+            "https://web.telegram.org/Dmitriymikha",   // Ссылка для кнопки ТИТАН
+            "https://web.telegram.org/Dmitriymikha"    // Ссылка для кнопки КИБЕР-АФК
+        ];
 
-        donations.forEach((item, index) => {
-            let isBought = false;
-            if(index === 0) isBought = isDonatBought.titan;
-            if(index === 1) isBought = isDonatBought.cyberAFK;
-
-            const card = document.createElement('div');
-            card.className = 'card donate-card';
-            card.innerHTML = `
-                <div class="card-info">
-                    <span class="card-name">💎 ${item.name}</span>
-                    <span class="card-desc">${item.desc}</span>
-                </div>
-                ${isBought ? 
-                    '<span style="color:#22d3ee; font-weight:bold;">КУПЛЕНО</span>' : 
-                    `<button class="card-btn donate-btn" onclick="buyDonate(${index})">
-                        ${item.price} ${item.currency}
-                    </button>`
-                }
-            `;
-            container.appendChild(card);
-        });
+        if(index === 0) {
+            if(!isDonatBought.titan) {
+                // Перенаправляем на оплату
+                window.location.href = paymentLinks[0];
+            } else {
+                alert("Это улучшение уже куплено!");
+            }
+        } else if (index === 1) {
+            if(!isDonatBought.cyberAFK) {
+                // Перенаправляем на оплату
+                window.location.href = paymentLinks[1];
+            } else {
+                alert("Это улучшение уже куплено!");
+            }
+        }
     }
 
     function buyDonate(index) {
