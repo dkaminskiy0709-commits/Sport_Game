@@ -274,7 +274,7 @@
         passiveIncome: 0
     };
 
-    // Данные улучшений (Индекс массива = уровень)
+    // Данные улучшений
     const upgrades = [
         { name: "Гантеля 'Старт'", desc: "+1 сила за клик", cost: 10, type: 'click', boost: 1 },
         { name: "Гантеля 'Прогресс'", desc: "+2 силы за клик", cost: 50, type: 'click', boost: 2 },
@@ -291,14 +291,13 @@
     // Данные доната
     const donations = [
         { name: "Титан", desc: "Навсегда +100 силы за клик", price: 20, currency: "BYN", boost: 100, type: 'click' },
-        { name: "Кибер-АФК", desc: "Навсегда +100 силы в секунду (Автокликер)", price: 40, currency: "BYN", boost: 100, type: 'passive' }
+        { name: "Кибер-АФК", desc: "Навсегда +100 силы в секунду", price: 40, currency: "BYN", boost: 100, type: 'passive' }
     ];
 
     let purchasedUpgrades = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let isDonatBought = { titan: false, cyberAFK: false };
-    let currentScreen = 'game';
 
-    // --- СОХРАНЕНИЕ И ЗАГРУЗКА (НОВАЯ ФУНКЦИЯ) ---
+    // --- СОХРАНЕНИЕ (С ИНДИКАТОРОМ) ---
     function saveGame() {
         const saveData = {
             power: gameData.power,
@@ -308,19 +307,42 @@
             purchasedUpgrades: purchasedUpgrades,
             isDonatBought: isDonatBought
         };
+        
+        // Сохраняем в память
         localStorage.setItem('gymBroSave', JSON.stringify(saveData));
+        
+        // Показываем зеленую галочку, что сохранение прошло успешно
+        const indicator = document.getElementById('save-indicator');
+        if(indicator) {
+            indicator.innerText = '✔️ Сохранено';
+            indicator.style.color = '#22d3ee';
+            // Через 2 секунды убираем надпись
+            setTimeout(() => {
+                indicator.innerText = '';
+            }, 2000);
+        }
     }
 
     function loadGame() {
         const saved = localStorage.getItem('gymBroSave');
         if (saved) {
-            const data = JSON.parse(saved);
-            gameData.power = data.power || 0;
-            gameData.money = data.money || 0;
-            gameData.clickPower = data.clickPower || 1;
-            gameData.passiveIncome = data.passiveIncome || 0;
-            purchasedUpgrades = data.purchasedUpgrades || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-            isDonatBought = data.isDonatBought || { titan: false, cyberAFK: false };
+            try {
+                const data = JSON.parse(saved);
+                gameData.power = data.power || 0;
+                gameData.money = data.money || 0;
+                gameData.clickPower = data.clickPower || 1;
+                gameData.passiveIncome = data.passiveIncome || 0;
+                purchasedUpgrades = data.purchasedUpgrades || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                isDonatBought = data.isDonatBought || { titan: false, cyberAFK: false };
+                console.log("Игра загружена! Сила:", gameData.power);
+                return true;
+            } catch (e) {
+                console.log("Ошибка загрузки, начинаем заново");
+                return false;
+            }
+        } else {
+            console.log("Сохранений нет, игра с нуля");
+            return false;
         }
     }
 
@@ -340,21 +362,21 @@
     }
     setInterval(updateTime, 1000);
 
-    // --- АВТОСОХРАНЕНИЕ И АФК ---
+    // --- АФК + АВТОСОХРАНЕНИЕ КАЖДЫЕ 5 СЕКУНД ---
     setInterval(() => {
         if(gameData.passiveIncome > 0) {
             gameData.power += gameData.passiveIncome;
             updateUI();
         }
-        saveGame(); // Сохраняем прогресс каждую секунду!
-    }, 1000);
+        saveGame(); // Автосохранение
+    }, 5000);
 
     // --- ЛОГИКА КЛИКА ---
     document.getElementById('click-target').addEventListener('click', function(e) {
         gameData.power += gameData.clickPower;
         gameData.money += 0.5; 
         updateUI();
-        saveGame(); // Сохраняем при клике
+        saveGame(); // Мгновенное сохранение при клике
 
         const floatText = document.createElement('div');
         floatText.className = 'float-text';
@@ -423,7 +445,7 @@
             
             purchasedUpgrades[index]++;
             updateUI();
-            saveGame(); // Сохраняем покупку
+            saveGame(); // Мгновенное сохранение при покупке
         }
     }
 
@@ -494,7 +516,9 @@
         updateUI();
     }
 
-    // --- ЗАПУСК ИГРЫ ---
-    loadGame();  // Сначала загружаем сохранения
-    updateUI();  // Потом обновляем экран
+    // --- ЗАПУСК ---
+    loadGame(); // Загружаем
+    updateUI(); // Отрисовываем
+    
+    console.log("Игра запущена. Текущая сила:", gameData.power);
 </script>
