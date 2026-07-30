@@ -271,7 +271,8 @@
         power: 0,
         money: 0,
         clickPower: 1,
-        passiveIncome: 0
+        passiveIncome: 0,
+        moneyPerSec: 0 // <--- ДОБАВИЛИ ПАССИВНЫЙ ДОХОД ДЕНЕГ
     };
 
     // Данные улучшений
@@ -284,7 +285,12 @@
         { name: "Машина Смита", desc: "+50 силы за клик", cost: 20000, type: 'click', boost: 50 },
         { name: "Кроссовер", desc: "+100 силы за клик", cost: 75000, type: 'click', boost: 100 },
         { name: "Гантеля 'Гига'", desc: "+250 силы за клик", cost: 250000, type: 'click', boost: 250 },
-        { name: "Стойка для приседа", desc: "+1000 силы за клик", cost: 1000000, type: 'click', boost: 1000 },
+        
+        // НОВЫЕ УЛУЧШЕНИЯ ДЛЯ ДЕНЕГ
+        { name: "Спонсор 'Первый'", desc: "+1 монета в секунду", cost: 100, type: 'money', boost: 1 },
+        { name: "Спонсор 'Бизнес'", desc: "+5 монет в секунду", cost: 1000, type: 'money', boost: 5 },
+        { name: "Реклама в зале", desc: "+15 монет в секунду", cost: 10000, type: 'money', boost: 15 },
+        
         { name: "АФК Качок (Авто)", desc: "+5 силы каждую секунду (без кликов)", cost: 2000000, type: 'passive', boost: 5 }
     ];
 
@@ -294,29 +300,27 @@
         { name: "Кибер-АФК", desc: "Навсегда +100 силы в секунду", price: 40, currency: "BYN", boost: 100, type: 'passive' }
     ];
 
-    let purchasedUpgrades = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let purchasedUpgrades = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // Обновили длину массива под новые апгрейды
     let isDonatBought = { titan: false, cyberAFK: false };
 
-    // --- СОХРАНЕНИЕ (С ИНДИКАТОРОМ) ---
+    // --- СОХРАНЕНИЕ ---
     function saveGame() {
         const saveData = {
             power: gameData.power,
             money: gameData.money,
             clickPower: gameData.clickPower,
             passiveIncome: gameData.passiveIncome,
+            moneyPerSec: gameData.moneyPerSec, // Сохраняем деньги
             purchasedUpgrades: purchasedUpgrades,
             isDonatBought: isDonatBought
         };
         
-        // Сохраняем в память
         localStorage.setItem('gymBroSave', JSON.stringify(saveData));
         
-        // Показываем зеленую галочку, что сохранение прошло успешно
         const indicator = document.getElementById('save-indicator');
         if(indicator) {
             indicator.innerText = '✔️ Сохранено';
             indicator.style.color = '#22d3ee';
-            // Через 2 секунды убираем надпись
             setTimeout(() => {
                 indicator.innerText = '';
             }, 2000);
@@ -332,7 +336,8 @@
                 gameData.money = data.money || 0;
                 gameData.clickPower = data.clickPower || 1;
                 gameData.passiveIncome = data.passiveIncome || 0;
-                purchasedUpgrades = data.purchasedUpgrades || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                gameData.moneyPerSec = data.moneyPerSec || 0; // Загружаем деньги
+                purchasedUpgrades = data.purchasedUpgrades || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
                 isDonatBought = data.isDonatBought || { titan: false, cyberAFK: false };
                 console.log("Игра загружена! Сила:", gameData.power);
                 return true;
@@ -362,21 +367,32 @@
     }
     setInterval(updateTime, 1000);
 
-    // --- АФК + АВТОСОХРАНЕНИЕ КАЖДЫЕ 5 СЕКУНД ---
+    // --- АФК + ДЕНЬГИ + АВТОСОХРАНЕНИЕ КАЖДЫЕ 1 СЕКУНДУ ---
     setInterval(() => {
+        let changed = false;
+        
         if(gameData.passiveIncome > 0) {
             gameData.power += gameData.passiveIncome;
-            updateUI();
+            changed = true;
         }
-        saveGame(); // Автосохранение
-    }, 5000);
+
+        if(gameData.moneyPerSec > 0) {
+            gameData.money += gameData.moneyPerSec; // Капают деньги каждую секунду
+            changed = true;
+        }
+
+        if(changed) {
+            updateUI();
+            saveGame(); // Сохраняем если что-то накапало
+        }
+    }, 1000); // Изменили с 5 секунд на 1 секунду, чтобы деньги капали плавно
 
     // --- ЛОГИКА КЛИКА ---
     document.getElementById('click-target').addEventListener('click', function(e) {
         gameData.power += gameData.clickPower;
-        gameData.money += 0.5; 
+        // gameData.money += 0.5; <--- ТЕПЕРЬ ДЕНЬГИ ЗА КЛИК НЕ ДАЕМ
         updateUI();
-        saveGame(); // Мгновенное сохранение при клике
+        saveGame();
 
         const floatText = document.createElement('div');
         floatText.className = 'float-text';
@@ -441,11 +457,13 @@
                 gameData.clickPower += item.boost;
             } else if (item.type === 'passive') {
                 gameData.passiveIncome += item.boost;
+            } else if (item.type === 'money') { // Добавили обработку денег
+                gameData.moneyPerSec += item.boost;
             }
             
             purchasedUpgrades[index]++;
             updateUI();
-            saveGame(); // Мгновенное сохранение при покупке
+            saveGame();
         }
     }
 
@@ -517,8 +535,7 @@
     }
 
     // --- ЗАПУСК ---
-    loadGame(); // Загружаем
-    updateUI(); // Отрисовываем
-    
+    loadGame();
+    updateUI();
     console.log("Игра запущена. Текущая сила:", gameData.power);
 </script>
