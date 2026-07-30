@@ -76,21 +76,22 @@
         }
 
         /* Эффект качка с картинки */
-        #click-target {
-            width: 280px;
-            height: 280px;
-            background-image: url('https://imgur.com/a/mO7QNHs'); /* Замените на свою ссылку */
-            background-size: cover;
+               #click-target {
+            width: 320px;
+            height: 320px;
+            /* ВСТАВЬ ПРЯМУЮ ССЫЛКУ НА КАРТИНКУ С Imgur */
+            background-image: url('https://i.imgur.com/ТУТ_БУДЕТ_КОД_КАРТИНКИ.png'); 
+            background-size: contain;
             background-position: center;
-            border-radius: 50%;
-            box-shadow: 0 0 60px rgba(139, 92, 246, 0.6), inset 0 0 20px rgba(0,0,0,0.8);
-            transition: transform 0.05s;
+            background-repeat: no-repeat;
             cursor: pointer;
+            transition: transform 0.1s;
             position: relative;
+            z-index: 5;
         }
+        
         #click-target:active {
-            transform: scale(0.95);
-            box-shadow: 0 0 100px rgba(217, 70, 239, 0.8);
+            transform: scale(0.92);
         }
 
         /* Всплывающие числа при клике (+1) */
